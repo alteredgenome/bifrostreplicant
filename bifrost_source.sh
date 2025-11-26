@@ -23,7 +23,7 @@ echo -e "${CYAN}=== Bifrost Replicant: SOURCE (Sender) ===${NC}"
 
 # --- 1. OS Detection & Dependency Installation ---
 install_deps() {
-    echo -e "${GREEN}Detecting OS and installing dependencies...${NC}"
+    echo -e "${GREEN}Detecting OS and installing dependencies (curl, rsync, ssh)...${NC}"
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         case $ID in
@@ -66,7 +66,8 @@ malai keygen --file
 
 # --- 4. Connect to Bridge ---
 echo -e "${CYAN}Enter the Bifrost Target ID (from the other server):${NC}"
-read -r REMOTE_ID
+# FIX: Force read from /dev/tty to allow curl | bash execution
+read -r REMOTE_ID < /dev/tty
 
 echo -e "${GREEN}Establishing bridge to $REMOTE_ID on port $LOCAL_PORT...${NC}"
 malai tcp-bridge "$REMOTE_ID" "$LOCAL_PORT" &
@@ -80,7 +81,7 @@ if ! ps -p $BRIDGE_PID > /dev/null; then
     exit 1
 fi
 
-# --- 5. OS Compatibility Check (NEW) ---
+# --- 5. OS Compatibility Check ---
 echo -e "${CYAN}Checking Source and Target compatibility...${NC}"
 
 # Get Local OS Info
@@ -90,7 +91,6 @@ LOCAL_VERSION=$VERSION_ID
 LOCAL_PRETTY=$PRETTY_NAME
 
 # Get Remote OS Info via Tunnel
-# We grab the raw file content via SSH
 REMOTE_OS_DATA=$(ssh -p "$LOCAL_PORT" -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@localhost "cat /etc/os-release" 2>/dev/null)
 
 if [ -z "$REMOTE_OS_DATA" ]; then
@@ -98,7 +98,6 @@ if [ -z "$REMOTE_OS_DATA" ]; then
     echo "The target might not be Linux, or SSH failed."
     REMOTE_ID="unknown"
 else
-    # Parse the remote variables manually to avoid sourcing untrusted remote code
     REMOTE_ID=$(echo "$REMOTE_OS_DATA" | grep "^ID=" | cut -d'=' -f2 | tr -d '"')
     REMOTE_VERSION=$(echo "$REMOTE_OS_DATA" | grep "^VERSION_ID=" | cut -d'=' -f2 | tr -d '"')
     REMOTE_PRETTY=$(echo "$REMOTE_OS_DATA" | grep "^PRETTY_NAME=" | cut -d'=' -f2 | tr -d '"')
@@ -115,7 +114,8 @@ if [ "$LOCAL_ID" != "$REMOTE_ID" ]; then
     echo -e "${YELLOW}You are attempting to clone $LOCAL_ID onto a $REMOTE_ID system.${NC}"
     echo -e "${YELLOW}This will likely result in a broken system unless you know exactly what you are doing.${NC}"
     echo -e "Type 'OVERWRITE' to proceed anyway, or anything else to cancel."
-    read -p "> " confirmation
+    # FIX: Force read from /dev/tty
+    read -p "> " confirmation < /dev/tty
     if [ "$confirmation" != "OVERWRITE" ]; then
         echo "Aborting operation safely."
         exit 1
@@ -124,7 +124,7 @@ elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
      echo -e "${YELLOW}WARNING: Version mismatch detected ($LOCAL_VERSION vs $REMOTE_VERSION).${NC}"
      echo "This is usually fine (upgrade/downgrade), but proceed with caution."
      echo "Press ENTER to continue, or Ctrl+C to cancel."
-     read -r
+     read -r < /dev/tty
 else
     echo -e "${GREEN}OS Match Confirmed. Proceeding.${NC}"
 fi
@@ -160,7 +160,8 @@ fi
 
 # --- 8. Reboot Prompt ---
 echo -e "${CYAN}-------------------------------------------------------${NC}"
-read -p "Would you like to reboot the TARGET host now? (y/N): " choice
+# FIX: Force read from /dev/tty
+read -p "Would you like to reboot the TARGET host now? (y/N): " choice < /dev/tty
 
 case "$choice" in 
   y|Y ) 
