@@ -3,9 +3,9 @@
 # --- Color Config ---
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-echo -e "${CYAN}=== Malai Destination Setup ===${NC}"
+echo -e "${CYAN}=== Bifrost Replicant: TARGET (Receiver) ===${NC}"
 
 # --- 1. OS Detection & Dependency Installation ---
 install_deps() {
@@ -36,32 +36,27 @@ install_deps() {
     fi
 }
 
-# Check if tools exist, if not install them
 if ! command -v curl &> /dev/null || ! command -v rsync &> /dev/null; then
     install_deps
-else
-    echo "Dependencies already installed."
 fi
 
 # --- 2. Install Malai ---
 if ! command -v malai &> /dev/null; then
     echo -e "${GREEN}Installing Malai...${NC}"
     curl -fsSL https://malai.sh/install.sh | sh
-else
-    echo "Malai is already installed."
 fi
 
-# --- 3. Generate Key (File Based) ---
-echo -e "${GREEN}Generating Malai identity file...${NC}"
+# --- 3. Generate Key ---
+echo -e "${GREEN}Generating Bifrost identity file...${NC}"
 malai keygen --file
 
-# --- 4. Expose SSH and Wait ---
+# --- 4. Open the Bridge ---
 echo -e "${CYAN}-------------------------------------------------------${NC}"
-echo -e "${CYAN}Starting Malai Tunnel.${NC}"
+echo -e "${CYAN}Bifrost Target Open.${NC}"
 echo -e "${GREEN}COPY THE ID BELOW (e.g., kulfi://...).${NC}"
-echo -e "You will need to paste this into the Source script."
-echo -e "Keep this terminal OPEN until the rsync is finished."
+echo -e "Paste this ID into the Source script."
+echo -e "Keep this terminal OPEN until the transfer is finished."
 echo -e "${CYAN}-------------------------------------------------------${NC}"
 
-# This command will block (wait) automatically
+# Expose local SSH port (22) to the Malai network
 malai tcp 22 --public
